@@ -65,6 +65,25 @@ module.exports = class PetController {
     }
   }
 
+  static async getAll(req, res) {
+    const pets = await Pet.find().sort('-createdAt')
+
+    res.json({
+      pets
+    })
+  }
+
+  static async getAllUserPets(req, res) {
+    const token = getToken(req)
+    const currentUser = await getUserByToken(token)
+
+    const myPets = await Pet.find({'user._id': currentUser._id}).sort('-createdAt')
+
+    res.json({
+      pets: myPets
+    })
+  }
+
   static badRequestHandler(res, message = "Bad request"	) {
     res.status(400).json({
       message
