@@ -10,11 +10,13 @@ app.use(express.json())
 app.use(cors({ credentials: true, origin: 'http://localhost:3000' }))
 
 // Public folder for images
-
 app.use(express.static('public'))
 
-const UserRouter = require('./routes/UserRoutes')
 // Routes
+const UserRouter = require('./routes/UserRoutes')
 app.use('/users', UserRouter)
+
+const PetRouter = require('./routes/PetRoutes')
+app.use('/pets', PetRouter)
 
 app.listen(5000)
