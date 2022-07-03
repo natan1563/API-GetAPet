@@ -1,8 +1,11 @@
 const getToken = require('../helpers/get-token')
 const getUserByToken = require('../helpers/get-user-by-token')
 const ObjectId = require('mongoose').Types.ObjectId
+const handleErrors = require('../helpers/error-handling')
 
 const Pet = require('../models/Pet')
+const NotFoundException = require('../Services/Errors/NotFoundException')
+const UnprocessableEntityException = require('../Services/Errors/UnprocessableEntityException')
 
 module.exports = class PetController {
   static async create(req, res) {
@@ -120,5 +123,32 @@ module.exports = class PetController {
     res.status(400).json({
       message
     })
+  }
+
+  static async removePetById(req, res) {
+    try {
+      const id = req.params.id
+      if (!ObjectId.isValid(id)) 
+        throw new UnprocessableEntityException('Ops! ID inválido')
+
+      const pet = await Pet.findById(id)
+      if (!pet)
+        throw new NotFoundException('Ops! Pet não encontrado')
+
+      const token = getToken(req)
+      const user = await getUserByToken(token)
+
+      if (pet.user._id.toString() !== user._id.toString())
+        throw new UnprocessableEntityException('Houve um problema em processar a sua solicitação')
+      
+      const removedPet = await Pet.findByIdAndRemove(pet._id)
+
+      res.json({
+        message: 'Pet removido com sucesso!',
+        pet: removedPet,
+      })
+    } catch (err) {
+      handleErrors(res, err)
+    }
   }
 }
