@@ -10,7 +10,7 @@ const UnprocessableEntityException = require('../Services/Errors/UnprocessableEn
 module.exports = class PetController {
   static async create(req, res) {
     try {
-      const {name, age, weight, color } = req.body
+      const { name, age, weight, color } = req.body
       const images = req.files
       const available = true
 
@@ -150,5 +150,63 @@ module.exports = class PetController {
     } catch (err) {
       handleErrors(res, err)
     }
+  }
+
+  static async updatePet(req, res) {
+    try {
+      const images = req.files
+      const dataToUpdate = {
+        name: req.body.name,
+        age: req.body.age,
+        weight: req.body.weight,
+        color: req.body.color,
+        images: images.map(img => img.filename)
+      }
+
+      PetController['validatePetAttributes'](dataToUpdate)
+
+      const id = req.params.id
+      if (!ObjectId.isValid(id)) 
+        throw new UnprocessableEntityException('Ops! ID inválido')
+
+      const pet = await Pet.findById(id)
+      if (!pet)
+        throw new NotFoundException('Ops! Pet não encontrado')
+      
+      const token = getToken(req)
+      const user = await getUserByToken(token)
+
+      if (pet.user._id.toString() !== user._id.toString())
+        throw new UnprocessableEntityException('Houve um problema em processar a sua solicitação')
+
+      const updatedData = await Pet.findByIdAndUpdate(pet._id, dataToUpdate)
+
+      res.status(200).json({
+        message: 'Pet atualizado com sucesso!',
+        updatedPet: updatedData
+      })
+    } catch (err) {
+      handleErrors(res, err)
+    }
+  }
+
+  static validatePetAttributes(petAttributes) {
+    const { name, age, weight, color, images } = petAttributes
+
+    console.log(petAttributes)
+    if (!name) 
+      throw new UnprocessableEntityException('O campo nome é obrigatório')
+  
+    if (!age) 
+      throw new UnprocessableEntityException('O campo idade é obrigatório')
+
+    if (!weight) 
+      throw new UnprocessableEntityException('O campo peso é obrigatório')
+      
+    if (!color) 
+      throw new UnprocessableEntityException('O campo color é obrigatório')
+
+    if (!images)
+      throw new UnprocessableEntityException('Ao menos uma imagem deve ser enviada')
   }
 }
