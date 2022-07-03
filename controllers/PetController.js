@@ -1,5 +1,6 @@
 const getToken = require('../helpers/get-token')
 const getUserByToken = require('../helpers/get-user-by-token')
+const ObjectId = require('mongoose').Types.ObjectId
 
 const Pet = require('../models/Pet')
 
@@ -93,6 +94,26 @@ module.exports = class PetController {
     res.json({
       pets: myPets
     })
+  }
+
+  static async getPetById(req, res) {
+   try {
+    const { id } = req.params
+
+    if (!ObjectId.isValid(id)) 
+      throw new Error('Ops! requisição inválida')
+
+    const pet = await Pet.findById(id)
+    if (!pet) 
+      throw new Error('Ops! Pet não encontrado')
+
+    res.status(200).json({ pet })
+   } catch (err) {
+    res.status(404).json({
+      error: '404',
+      message: err.message
+    })
+   }
   }
 
   static badRequestHandler(res, message = "Bad request"	) {
